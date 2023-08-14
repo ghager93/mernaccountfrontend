@@ -1,7 +1,8 @@
-import { Button, TextField, Grid, Switch, FormControlLabel } from '@mui/material';
+import { Button, TextField, Grid, Checkbox, FormControlLabel, Dialog } from '@mui/material';
 import { useFormik } from 'formik';
 import { object, string } from 'yup';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const LoginValidation = object().shape({
   username: string().required("Required."),
@@ -13,6 +14,9 @@ const SignupPage = () => {
   const [msg, setMsg] = useState("");
   const [twofa, setTwofa] = useState(false);
   const [qrcode, setQrcode] = useState("");
+  const [openDialog, setOpenDialog] = useState(false);
+
+  const navigate = useNavigate();
 
   const formik = useFormik({
     initialValues: {
@@ -56,25 +60,25 @@ const SignupPage = () => {
             body: JSON.stringify({
               username: values.username
             })
-          }
+          } 
           fetch("api/2fa/generate-2fa", qrRequestOptions)
           .then((response) => response.json())
           .then((out) => {
-            console.log(out)
-            // setQrcode(out.)
-          })      
+            setQrcode(out.img)
+            setOpenDialog(true)
+          })
         }
     }
   }
 
   const TwofaSwitch = () => {  
-    const handleChange = e => {
-      setTwofa(e.target.checked)
-    }
-
     return (
-      <FormControlLabel control={<Switch onChange={handleChange} />} label="Use Two-Factor Authentication"/>
+      <FormControlLabel control={<Checkbox checked={twofa} onChange={e => setTwofa(e.target.checked)} />} label="Enable Two-Factor Authentication" />
     )
+  }
+
+  const onCloseDialog = () => {
+    navigate("/")
   }
 
   return (
@@ -115,7 +119,6 @@ const SignupPage = () => {
           </Grid>
           <Grid item padding={1}>
             <TwofaSwitch />
-            {twofa && "true"}
           </Grid>
           <Grid item padding={1}>
             <Button color="primary" variant="contained" fullWidth type="submit">
@@ -125,6 +128,9 @@ const SignupPage = () => {
         </Grid>
       </form>
       <p>Return: {msg}</p>
+      <Dialog open={openDialog} onClose={onCloseDialog}>
+        <img src={qrcode} />
+      </Dialog>
     </div>
   )
 }
