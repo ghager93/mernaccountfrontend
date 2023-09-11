@@ -13,7 +13,9 @@ const LoginValidation = object().shape({
 const SignupPage = () => {
   const [msg, setMsg] = useState("");
   const [twofa, setTwofa] = useState(false);
+  const [emailVerification, setEmailVerification] = useState(false);
   const [qrcode, setQrcode] = useState("");
+  const [secret, setSecret] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
 
   const navigate = useNavigate();
@@ -32,42 +34,47 @@ const SignupPage = () => {
 
   const handleSubmit = (values) => {
     if(values.password !== values.confirmPassword) {
-        setMsg("Passwords don't match.")
+      setMsg("Passwords don't match.")
     }
     else {
-        const requestOptions = {
+      const bodyjson = {
+        username: values.username,
+        password: values.password,
+        emailVerification: emailVerification
+      }
+      if (emailVerification) {
+        bodyjson.email = values.email
+      }
+      const requestOptions = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            username: values.username,
-            password: values.password
-        }),
-        };
-        console.log(requestOptions)
-        fetch("api/creds", requestOptions)
+        body: JSON.stringify(bodyjson),
+      };
+      console.log(requestOptions)
+      fetch("api/creds", requestOptions)
+      .then((response) => response.json())
+      .then((out) => {
+        console.log(out)
+        setMsg([...Object.values(out)])
+      });
+      
+      console.log(twofa)
+      if(twofa) {
+        const qrRequestOptions = {
+          method: "POST",
+          headers: { "Content-Type": "application/json"},
+          body: JSON.stringify({
+            username: values.username
+          })
+        } 
+        fetch("api/2fa/generate-2fa", qrRequestOptions)
         .then((response) => response.json())
         .then((out) => {
-            console.log(out)
-            setMsg([...Object.values(out)])
-
-        });
-        
-        console.log(twofa)
-        if(twofa) {
-          const qrRequestOptions = {
-            method: "POST",
-            headers: { "Content-Type": "application/json"},
-            body: JSON.stringify({
-              username: values.username
-            })
-          } 
-          fetch("api/2fa/generate-2fa", qrRequestOptions)
-          .then((response) => response.json())
-          .then((out) => {
-            setQrcode(out.img)
-            setOpenDialog(true)
-          })
-        }
+          setQrcode(out.img)
+          setSecret(out.secret)
+          setOpenDialog(true)
+        })
+      }
     }
   }
 
@@ -77,7 +84,14 @@ const SignupPage = () => {
     )
   }
 
+  const EmailVerificationSwitch = () => {  
+    return (
+      <FormControlLabel control={<Checkbox checked={emailVerification} onChange={e => setEmailVerification(e.target.checked)} />} label="Enable Email Verification" />
+    )
+  }
+  
   const onCloseDialog = () => {
+    setOpenDialog(false)
     navigate("/")
   }
 
@@ -119,9 +133,10 @@ const SignupPage = () => {
           </Grid>
           <Grid item padding={1}>
             <TwofaSwitch />
+            <EmailVerificationSwitch />
           </Grid>
           <Grid item padding={1}>
-            <Button color="primary" variant="contained" fullWidth type="submit">
+            <Button color="primary" variant="contained" type="submit">
               Submit
             </Button>
           </Grid>
@@ -129,7 +144,11 @@ const SignupPage = () => {
       </form>
       <p>Return: {msg}</p>
       <Dialog open={openDialog} onClose={onCloseDialog}>
-        <img src={qrcode} />
+        <img src={qrcode} alt="A QR Code"/>
+        {secret}
+        <Button color="primary" variant="contained" fullWidth onClick={onCloseDialog}>
+          Done
+        </Button>
       </Dialog>
     </div>
   )
