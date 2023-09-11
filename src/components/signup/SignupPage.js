@@ -24,7 +24,9 @@ const SignupPage = () => {
     initialValues: {
       username: "",
       password: "",
-      confirmPassword: ""
+      confirmPassword: "",
+      email: "",
+      confirmEmail: ""
     },
     validationSchema: LoginValidation,
     onSubmit: (values) => {
@@ -35,6 +37,9 @@ const SignupPage = () => {
   const handleSubmit = (values) => {
     if(values.password !== values.confirmPassword) {
       setMsg("Passwords don't match.")
+    }
+    if(emailVerification && values.email != values.confirmEmail) {
+      setMsg("Emails don't match.")
     }
     else {
       const bodyjson = {
@@ -131,7 +136,33 @@ const SignupPage = () => {
               type="password"
             />
           </Grid>
-          <Grid item padding={1}>
+          { emailVerification && 
+            <Grid item padding={1}>
+              <TextField
+                fullWidth
+                id="email"
+                name="email"
+                label="Email"
+                value={formik.values.url}
+                onChange={formik.handleChange}
+                type="email"
+              />
+            </Grid>
+          }
+          { emailVerification &&
+            <Grid item padding={1} visibility={emailVerification}>
+              <TextField
+                fullWidth
+                id="confirmEmail"
+                name="confirmEmail"
+                label="Confirm Email"
+                value={formik.values.url}
+                onChange={formik.handleChange}
+                type="email"
+              />
+            </Grid>
+          }
+          <Grid item padding={1} visibility={emailVerification}>
             <TwofaSwitch />
             <EmailVerificationSwitch />
           </Grid>
